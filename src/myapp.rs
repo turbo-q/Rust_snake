@@ -7,7 +7,7 @@ use rand::seq::SliceRandom;
 const MOVE_STEP: i32 = 2;
 
 use crate::{
-    snake::{self, Point},
+    snake::{self, Point, BODY_SIZE},
     utils,
 };
 pub struct MyApp {
@@ -17,20 +17,19 @@ pub struct MyApp {
 }
 
 impl MyApp {
-    pub fn new(w: i32, h: i32) -> MyApp {
+    pub fn new(x: i32, y: i32, w: i32, h: i32) -> MyApp {
         // init app style
         let a = app::App::default().with_scheme(app::Scheme::Plastic);
 
         // 渲染窗口
-        let wind = MyApp::draw_window(w, h);
+        let wind = MyApp::draw_window(x, y, w, h);
 
         // init snake
-        let min_x = wind.x() + MOVE_STEP;
-        let max_x = wind.x() + w;
-        let min_y = wind.y() + MOVE_STEP;
-        let max_y = wind.y() + h;
-
-        let rand_x = utils::rand_range(min_x, max_x);
+        let min_x = x;
+        let max_x = x + w - BODY_SIZE;
+        let min_y = y;
+        let max_y = y + h - BODY_SIZE;
+        let rand_x: i32 = utils::rand_range(min_x, max_x);
         let rand_y = utils::rand_range(min_y, max_y);
         let _snake = snake::Snake::new(rand_x, rand_y, wind.clone()); // 初始化snake
 
@@ -43,25 +42,6 @@ impl MyApp {
         }
     }
 
-    // fn get_available_point(&self) -> Point {
-    //     let min_x = self._window.x() + MOVE_STEP;
-    //     let max_x = self._window.x() + self._window.w();
-    //     let min_y = self._window.y() + MOVE_STEP;
-    //     let max_y = self._window.y() + self._window.h();
-
-    //     let snake = self._snake.borrow(); // study 必须先声明，创建一个临时变量，确保引用结束之前值不会被释放
-    //     let points = snake.get_occupied_points(); //
-    //                                               // 生成未占用坐标点的列表初始化食物
-    //     let available_points: Vec<snake::Point> = (min_x..max_x)
-    //         .flat_map(|x| (min_y..max_y).map(move |y| snake::Point::new(x, y)))
-    //         .filter(|point| !points.contains(point))
-    //         .collect();
-    //     available_points
-    //         .choose(&mut rand::thread_rng())
-    //         .unwrap()
-    //         .to_point()
-    // }
-
     fn draw(&mut self) {
         // 获取snake 点位
         let points = (*self._snake).borrow().get_occupied_points().to_vec();
@@ -71,6 +51,7 @@ impl MyApp {
         let y = 100;
 
         // draw
+        app::awake(); // 唤醒ui线程
         self._window.draw(move |f| {
             // 在 draw 中实现绘制逻辑，此处是根据缓存绘制
             for point in &points {
@@ -80,14 +61,16 @@ impl MyApp {
             }
         });
         self._window.redraw();
+        app::wait();
     }
 
-    fn draw_window(w: i32, h: i32) -> window::DoubleWindow {
+    fn draw_window(x: i32, y: i32, w: i32, h: i32) -> window::DoubleWindow {
         // init
-        let mut wind: window::DoubleWindow = window::Window::new(0, 0, w, h, "Rust_snake");
+        let mut wind: window::DoubleWindow = window::Window::new(x, y, w, h, "Rust_snake");
         wind.set_color(Color::Black); // 设置颜色
-                                      // wind.set_border(false); // 无边框
-                                      // wind.fullscreen(true); // 全屏
+        wind.set_border(false); // 无边框
+                                // wind.fullscreen(true); // 全屏
+
         wind.end();
         wind.show();
         wind
@@ -97,16 +80,12 @@ impl MyApp {
         self.watch_key();
         loop {
             app::sleep(0.22 - self._snake.borrow_mut().len() as f64 * 0.02); // sleep 时间决定了speed，长度越长，speed越快
-            app::awake(); // 唤醒ui线程
-                          // self.draw_food();
+
             self._snake
                 .borrow_mut()
                 .move_direction(MOVE_STEP, false /*is_direction*/)
                 .unwrap();
-
             self.draw();
-            println!("{}", Rc::strong_count(&self._snake));
-            app::wait();
         }
     }
 

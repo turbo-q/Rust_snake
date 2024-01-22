@@ -37,55 +37,8 @@ impl Point {
     }
 }
 
-// snake node
-struct SnakeBody {
-    point: Point,
-    next: Rc<Option<SnakeBody>>,
-    prev: Rc<Option<SnakeBody>>,
-}
-impl SnakeBody {
-    fn new(x: i32, y: i32) -> SnakeBody {
-        SnakeBody {
-            point: Point { x, y },
-            next: Rc::new(None),
-            prev: Rc::new(None),
-        }
-    }
-
-    fn next(&self) -> &Rc<Option<SnakeBody>> {
-        &self.next
-    }
-
-    fn point(&self) -> Point {
-        self.point.clone()
-    }
-
-    fn prev(&self) -> &Rc<Option<SnakeBody>> {
-        &self.prev
-    }
-
-    fn set_next(&mut self, next: Rc<Option<SnakeBody>>) {
-        self.next = next;
-    }
-
-    fn set_prev(&mut self, prev: Rc<Option<SnakeBody>>) {
-        self.prev = prev;
-    }
-
-    fn draw(&self, window: &mut window::DoubleWindow) {
-        let x = self.point.x;
-        let y = self.point.y;
-        window.draw(move |_| {
-            draw::set_draw_color(Color::Red);
-            draw::draw_rectf(x, y, BODY_SIZE, BODY_SIZE);
-        })
-    }
-}
-
 // snake
 pub struct Snake {
-    head: Rc<Option<SnakeBody>>,
-    tail: Rc<Option<SnakeBody>>, // 因为头尾可能都存在，所以走Rc引用计数
     len: i32,
     direction: Direction, // 移动方向
     window: window::DoubleWindow,
@@ -94,11 +47,7 @@ pub struct Snake {
 
 impl Snake {
     pub fn new(x: i32, y: i32, window: window::DoubleWindow) -> Snake {
-        let head = Rc::new(Some(SnakeBody::new(x, y)));
-
         Snake {
-            head: Rc::clone(&head),
-            tail: Rc::clone(&head),
             len: 1,
             window: window,
             direction: Direction::Right,
@@ -116,31 +65,17 @@ impl Snake {
         &self.occupied_points
     }
 
-    // fn draw_snake(&mut self) {
-    //     let mut body = &self.head;
-    //     let mut points: Vec<Point> = Vec::new();
-    //     while let Some(_snake) = &**body
-    //     /*借用*/
-    //     {
-    //         points.push(_snake.point());
-    //         // _snake.draw(&mut self.window);
-    //         body = _snake.next();
-    //     }
-
-    // }
-
     // 改变移动方向
     pub fn set_direction(&mut self, direction: Direction) {
-        println!("set_direction:{:?}", direction);
         self.direction = direction
     }
 
     // 移动主要就是新增加一个node 当作head，新增加的head指向当前最新的head，删除tail
     pub fn move_direction(&mut self, size: i32, is_direction: bool) -> Result<(), String> {
-        let data = self.head.deref();
+        let data = self.occupied_points.first();
         if let Some(head) = data {
-            let mut x = head.point.x;
-            let mut y = head.point.y;
+            let mut x = head.x;
+            let mut y = head.y;
             let last_direction = self.direction.clone();
             match self.direction {
                 Direction::Down => y += size,
@@ -157,19 +92,14 @@ impl Snake {
                 return Err(String::from("Game over"));
             }
 
-            let new_body = Rc::new(Some((SnakeBody::new(x, y))));
-
             // 被其他地方修改了方向，为了丝滑放弃本次渲染
             if last_direction != self.direction && !is_direction {
                 return Ok(());
             }
             // 只有一个节点，直接重置
-            if Rc::ptr_eq(&self.head, &self.tail) {
-                self.head = Rc::clone(&new_body);
-                self.tail = Rc::clone(&new_body);
+            if self.occupied_points.len() == 1 {
                 self.occupied_points.pop(); // 最后一个丢掉
                 self.occupied_points.push(Point { x, y }); // 记录新的点
-                                                           // self.draw_snake();
                 return Ok(());
             }
 
