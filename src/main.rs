@@ -1,3 +1,4 @@
+mod food;
 mod myapp;
 mod snake;
 mod utils;

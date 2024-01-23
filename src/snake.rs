@@ -39,19 +39,32 @@ impl Point {
 
 // snake
 pub struct Snake {
+    // 不知道为什么直接从_window.x()/_window.y()获取数据不对，所以只用冗余
+    window_x: i32,
+    window_y: i32,
     len: i32,
     direction: Direction, // 移动方向
     window: window::DoubleWindow,
     occupied_points: Vec<Point>, // 已经占用的点
+    last_tail_point: Point,      // 上一次尾节点，可以用来新增节点
 }
 
 impl Snake {
-    pub fn new(x: i32, y: i32, window: window::DoubleWindow) -> Snake {
+    pub fn new(
+        window_x: i32,
+        window_y: i32,
+        x: i32,
+        y: i32,
+        window: window::DoubleWindow,
+    ) -> Snake {
         Snake {
+            window_x: window_x,
+            window_y: window_y,
             len: 1,
             window: window,
             direction: Direction::Right,
             occupied_points: vec![Point { x, y }], // 已经占用的点
+            last_tail_point: Point { x: x, y: y },
         }
     }
 
@@ -70,10 +83,14 @@ impl Snake {
         self.direction = direction
     }
 
+    pub fn add_body(&mut self) {
+        self.occupied_points.push(self.last_tail_point.to_point())
+    }
+
     // 移动主要就是新增加一个node 当作head，新增加的head指向当前最新的head，删除tail
     pub fn move_direction(&mut self, size: i32, is_direction: bool) -> Result<(), String> {
-        let data = self.occupied_points.first();
-        if let Some(head) = data {
+        let first = self.occupied_points.first();
+        if let Some(head) = first {
             let mut x = head.x;
             let mut y = head.y;
             let last_direction = self.direction.clone();
@@ -85,10 +102,10 @@ impl Snake {
             }
 
             // 超出边界
-            if x <= self.window.x() || x >= self.window.x() + self.window.width() {
+            if x <= self.window_x || x >= self.window_x + self.window.width() - BODY_SIZE {
                 return Err(String::from("Game over"));
             }
-            if y <= self.window.y() || y >= self.window.y() + self.window.height() {
+            if y <= self.window_y || y >= self.window_y + self.window.height() - BODY_SIZE {
                 return Err(String::from("Game over"));
             }
 
@@ -98,12 +115,14 @@ impl Snake {
             }
             // 只有一个节点，直接重置
             if self.occupied_points.len() == 1 {
-                self.occupied_points.pop(); // 最后一个丢掉
-                self.occupied_points.push(Point { x, y }); // 记录新的点
+                self.last_tail_point = self.occupied_points.pop().unwrap(); // 最后一个丢掉
+                self.occupied_points.insert(0, Point { x, y }); // 记录新的点
+                return Ok(());
+            } else {
+                self.last_tail_point = self.occupied_points.pop().unwrap(); // 最后一个丢掉
+                self.occupied_points.insert(0, Point { x, y }); // 记录新的点
                 return Ok(());
             }
-
-            // todo 多个节点的时候
         }
 
         Ok(())
