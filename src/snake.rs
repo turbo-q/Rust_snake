@@ -1,4 +1,8 @@
+use std::{cmp::max, collections::HashMap};
+
 use fltk::{prelude::*, *};
+
+use crate::consts;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Direction {
@@ -9,9 +13,9 @@ pub enum Direction {
 }
 
 // body大小，小方框
-pub const BODY_SIZE: i32 = 10;
+pub const BODY_SIZE: i32 = 1;
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct Point {
     x: i32, // x方向位置
     y: i32, // y方向位置
@@ -75,22 +79,133 @@ impl Snake {
         self.direction = direction
     }
 
+    // 添加body逻辑
+    // 在蛇尾添加，默认与移动方向相反
+    // 比如当前蛇头向左移动，则添加蛇尾的右边
+    // 当前蛇头向上移动，则添加到蛇尾的下边
+    // 当前也要进行边界值的判定
     pub fn add_body(&mut self) {
-        self.occupied_points.push(self.last_tail_point.clone())
+        let last_point = self.get_occupied_points().last().unwrap();
+        let mut can_move = vec![
+            (Direction::Up, 0, 0),
+            (Direction::Down, 0, 0),
+            (Direction::Left, 0, 0),
+            (Direction::Right, 0, 0),
+        ];
+
+        // 能不能在上边添加
+        if last_point.y() - BODY_SIZE <= self.window_y {
+            println!("1");
+            can_move.retain(|x| x.0 != Direction::Up)
+        } else {
+            // 可以添加判断添加后是否与现有节点交叉
+            let new_x = last_point.x();
+            let new_y = last_point.y() - BODY_SIZE;
+            let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
+            if is_mix {
+                println!("1=");
+                can_move.retain(|x| x.0 != Direction::Up)
+            } else {
+                let idx = can_move.iter().position(|x| x.0 == Direction::Up).unwrap();
+                can_move[idx] = (Direction::Up, new_x, new_y)
+            }
+        }
+        // 能不能在下边添加
+        if last_point.y() + 2 * BODY_SIZE >= self.window_y + self.window.h() {
+            println!("2");
+            can_move.retain(|x| x.0 != Direction::Down)
+        } else {
+            // 可以添加判断添加后是否与现有节点交叉
+            let new_x = last_point.x();
+            let new_y = last_point.y() + BODY_SIZE;
+            let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
+            if is_mix {
+                println!("2=");
+                can_move.retain(|x| x.0 != Direction::Down)
+            } else {
+                let idx = can_move
+                    .iter()
+                    .position(|x| x.0 == Direction::Down)
+                    .unwrap();
+                can_move[idx] = (Direction::Down, new_x, new_y)
+            }
+        }
+        // 能不能在左边添加
+        if last_point.x() - BODY_SIZE <= self.window_x {
+            println!("3");
+            can_move.retain(|x| x.0 != Direction::Left)
+        } else {
+            // 可以添加判断添加后是否与现有节点交叉
+            let new_x = last_point.x() - BODY_SIZE;
+            let new_y = last_point.y();
+            let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
+            if is_mix {
+                println!("3=");
+                can_move.retain(|x| x.0 != Direction::Left)
+            } else {
+                let idx = can_move
+                    .iter()
+                    .position(|x| x.0 == Direction::Left)
+                    .unwrap();
+                can_move[idx] = (Direction::Left, new_x, new_y)
+            }
+        }
+        // 能不能在右边添加
+        if last_point.x() + 2 * BODY_SIZE >= self.window_x + self.window.w() {
+            println!("4");
+            can_move.retain(|x| x.0 != Direction::Right)
+        } else {
+            // 可以添加判断添加后是否与现有节点交叉
+            let new_x = last_point.x() + BODY_SIZE;
+            let new_y = last_point.y();
+            let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
+            if is_mix {
+                println!("4=");
+                can_move.retain(|x| x.0 != Direction::Right)
+            } else {
+                let idx = can_move
+                    .iter()
+                    .position(|x| x.0 == Direction::Right)
+                    .unwrap();
+                can_move[idx] = (Direction::Right, new_x, new_y)
+            }
+        }
+        // 没有可以移动
+        if can_move.len() == 0 {
+            panic!("Game over")
+        }
+
+        // 根据移动方向调整优先级
+        // 把高优先级的方向优先添加
+        let priority_direction: Direction;
+        match self.direction {
+            Direction::Up => priority_direction = Direction::Down,
+            Direction::Down => priority_direction = Direction::Up,
+            Direction::Left => priority_direction = Direction::Right,
+            Direction::Right => priority_direction = Direction::Left,
+        }
+        if let Some(idx) = can_move.iter().position(|x| x.0 == priority_direction) {
+            can_move.swap(0, idx)
+        }
+        let move_direction = can_move.get(0).unwrap();
+
+        self.occupied_points
+            .push(Point::new(move_direction.1, move_direction.2))
     }
 
     // 移动主要就是新增加一个node 当作head，新增加的head指向当前最新的head，删除tail
     pub fn move_direction(&mut self, size: i32, is_direction: bool) -> Result<(), String> {
+        println!("points===={:?}", self.occupied_points);
         let first = self.occupied_points.first();
         if let Some(head) = first {
             let mut x = head.x;
             let mut y = head.y;
             let last_direction = self.direction.clone();
             match self.direction {
-                Direction::Down => y += size,
-                Direction::Up => y -= size,
-                Direction::Right => x += size,
-                Direction::Left => x -= size,
+                Direction::Down => y += size * BODY_SIZE,
+                Direction::Up => y -= size * BODY_SIZE,
+                Direction::Right => x += size * BODY_SIZE,
+                Direction::Left => x -= size * BODY_SIZE,
             }
 
             // 超出边界
@@ -112,5 +227,28 @@ impl Snake {
         }
 
         Ok(())
+    }
+
+    fn is_mix_point(&self, point1: &Point, point2: &Point) -> bool {
+        // 间隔小于等于2倍body就是穿过了
+        let x_space = max(
+            point1.x() + BODY_SIZE - point2.x(),
+            point2.x() + BODY_SIZE - point1.x(),
+        );
+        let y_space = max(
+            point1.y() + BODY_SIZE - point2.y(),
+            point2.y() + BODY_SIZE - point1.y(),
+        );
+        (point1.x() == point2.x() || point1.y() == point2.y()/*在同一条线*/)
+            && (x_space < 2 * BODY_SIZE && y_space < 2 * BODY_SIZE/*有交叉*/)
+    }
+
+    fn is_mix_snake(&self, point_: &Point) -> bool {
+        self.get_occupied_points().iter().any(move |p| {
+            if self.is_mix_point(point_, p) {
+                return true;
+            }
+            false
+        })
     }
 }

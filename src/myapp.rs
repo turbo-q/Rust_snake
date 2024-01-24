@@ -72,14 +72,14 @@ impl MyApp {
         );
 
         (head.x() == self._food.x() || head.y() == self._food.y()/*在同一条线*/)
-            && (x_space <= 2 * BODY_SIZE && y_space <= 2 * BODY_SIZE/*有交叉*/)
+            && (x_space < 2 * BODY_SIZE && y_space < 2 * BODY_SIZE/*有交叉*/)
     }
 
     pub fn run(&mut self) {
         self.init_food(); // 初始化food
         self.watch_key(); // 监听key
         loop {
-            app::sleep(0.12 - self._snake.borrow_mut().len() as f64 * 0.02); // sleep 时间决定了speed，长度越长，speed越快
+            app::sleep(0.20 - self._snake.borrow_mut().len() as f64 * 0.02); // sleep 时间决定了speed，长度越长，speed越快
             self._snake
                 .borrow_mut()
                 .move_direction(MOVE_STEP, false /*is_direction*/)
@@ -88,7 +88,9 @@ impl MyApp {
 
             // 渲染出来发现已经eat_food
             if self.is_eat_food() {
-                panic!("eat_food");
+                // panic!("eat_food");
+                self._snake.borrow_mut().add_body();
+                self.init_food();
             }
         }
     }

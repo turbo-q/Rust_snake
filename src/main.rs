@@ -1,3 +1,4 @@
+mod consts;
 mod food;
 mod myapp;
 mod snake;
