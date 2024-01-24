@@ -1,6 +1,4 @@
-use std::{borrow::Borrow, ops::Deref, rc::Rc};
-
-use fltk::{enums::Color, prelude::*, *};
+use fltk::{prelude::*, *};
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Direction {
@@ -22,12 +20,6 @@ pub struct Point {
 impl Point {
     pub fn new(x: i32, y: i32) -> Point {
         Point { x: x, y: y }
-    }
-    pub fn to_point(&self) -> Point {
-        Point {
-            x: self.x,
-            y: self.y,
-        }
     }
     pub fn x(&self) -> i32 {
         self.x
@@ -84,7 +76,7 @@ impl Snake {
     }
 
     pub fn add_body(&mut self) {
-        self.occupied_points.push(self.last_tail_point.to_point())
+        self.occupied_points.push(self.last_tail_point.clone())
     }
 
     // 移动主要就是新增加一个node 当作head，新增加的head指向当前最新的head，删除tail
@@ -113,16 +105,10 @@ impl Snake {
             if last_direction != self.direction && !is_direction {
                 return Ok(());
             }
-            // 只有一个节点，直接重置
-            if self.occupied_points.len() == 1 {
-                self.last_tail_point = self.occupied_points.pop().unwrap(); // 最后一个丢掉
-                self.occupied_points.insert(0, Point { x, y }); // 记录新的点
-                return Ok(());
-            } else {
-                self.last_tail_point = self.occupied_points.pop().unwrap(); // 最后一个丢掉
-                self.occupied_points.insert(0, Point { x, y }); // 记录新的点
-                return Ok(());
-            }
+
+            self.last_tail_point = self.occupied_points.pop().unwrap(); // 最后一个丢掉
+            self.occupied_points.insert(0, Point { x, y }); // 记录新的点
+            return Ok(());
         }
 
         Ok(())
