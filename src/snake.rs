@@ -13,7 +13,7 @@ pub enum Direction {
 }
 
 // body大小，小方框
-pub const BODY_SIZE: i32 = 1;
+pub const BODY_SIZE: i32 = 10;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Point {
@@ -35,9 +35,6 @@ impl Point {
 
 // snake
 pub struct Snake {
-    // 不知道为什么直接从_window.x()/_window.y()获取数据不对，所以只用冗余
-    window_x: i32,
-    window_y: i32,
     len: i32,
     direction: Direction, // 移动方向
     window: window::DoubleWindow,
@@ -54,8 +51,6 @@ impl Snake {
         window: window::DoubleWindow,
     ) -> Snake {
         Snake {
-            window_x: window_x,
-            window_y: window_y,
             len: 1,
             window: window,
             direction: Direction::Right,
@@ -94,7 +89,7 @@ impl Snake {
         ];
 
         // 能不能在上边添加
-        if last_point.y() - BODY_SIZE <= self.window_y {
+        if last_point.y() - BODY_SIZE <= 0 {
             println!("1");
             can_move.retain(|x| x.0 != Direction::Up)
         } else {
@@ -111,7 +106,7 @@ impl Snake {
             }
         }
         // 能不能在下边添加
-        if last_point.y() + 2 * BODY_SIZE >= self.window_y + self.window.h() {
+        if last_point.y() + 2 * BODY_SIZE >= self.window.h() {
             println!("2");
             can_move.retain(|x| x.0 != Direction::Down)
         } else {
@@ -131,7 +126,7 @@ impl Snake {
             }
         }
         // 能不能在左边添加
-        if last_point.x() - BODY_SIZE <= self.window_x {
+        if last_point.x() - BODY_SIZE <= 0 {
             println!("3");
             can_move.retain(|x| x.0 != Direction::Left)
         } else {
@@ -151,7 +146,7 @@ impl Snake {
             }
         }
         // 能不能在右边添加
-        if last_point.x() + 2 * BODY_SIZE >= self.window_x + self.window.w() {
+        if last_point.x() + 2 * BODY_SIZE >= self.window.w() {
             println!("4");
             can_move.retain(|x| x.0 != Direction::Right)
         } else {
@@ -209,10 +204,10 @@ impl Snake {
             }
 
             // 超出边界
-            if x <= self.window_x || x >= self.window_x + self.window.width() - BODY_SIZE {
+            if x <= 0 || x >= self.window.width() - BODY_SIZE {
                 return Err(String::from("Game over"));
             }
-            if y <= self.window_y || y >= self.window_y + self.window.height() - BODY_SIZE {
+            if y <= 0 || y >= self.window.height() - BODY_SIZE {
                 return Err(String::from("Game over"));
             }
 

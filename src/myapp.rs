@@ -11,9 +11,6 @@ use crate::{
     utils,
 };
 pub struct MyApp {
-    // 不知道为什么直接从_window.x()/_window.y()获取数据不对，所以只用冗余
-    _window_x: i32,
-    _window_y: i32,
     _app: app::App,
     _snake: Rc<RefCell<snake::Snake>>, // 多所有者
     _window: DoubleWindow,
@@ -28,18 +25,14 @@ impl MyApp {
         // 渲染窗口
         let wind = MyApp::draw_window(x, y, w, h);
 
-        // init snake
-        let min_x = x;
-        let max_x = x + w - BODY_SIZE;
-        let min_y = y;
-        let max_y = y + h - BODY_SIZE;
-        let rand_x: i32 = utils::rand_range(min_x, max_x);
-        let rand_y = utils::rand_range(min_y, max_y);
+        // init snake/根据BODY_SIZE 分为相应的份数
+        let max_x = (w - BODY_SIZE) / BODY_SIZE;
+        let max_y = (h - BODY_SIZE) / BODY_SIZE;
+        let rand_x: i32 = utils::rand_range(0, max_x) * BODY_SIZE;
+        let rand_y = utils::rand_range(0, max_y) * BODY_SIZE;
         let _snake = snake::Snake::new(x, y, rand_x, rand_y, wind.clone()); // 初始化snake
 
         MyApp {
-            _window_x: x,
-            _window_y: y,
             _app: a,
             _snake: Rc::new(RefCell::new(_snake)),
             _window: wind,
@@ -132,14 +125,13 @@ impl MyApp {
     // 初始化食物
     fn init_food(&mut self) {
         let occupied_points = (*self._snake).borrow().get_occupied_points().to_vec();
-        let min_x = self._window_x;
-        let max_x = self._window_x + self._window.w() - BODY_SIZE;
-        let min_y = self._window_y;
-        let max_y = self._window_y + self._window.h() - BODY_SIZE;
+        // 分成对应的份数
+        let max_x = (self._window.w() - BODY_SIZE) / BODY_SIZE;
+        let max_y = (self._window.h() - BODY_SIZE) / BODY_SIZE;
 
         // 剩下的坐标点
-        let all_points: Vec<Point> = (min_x..max_x)
-            .flat_map(|x| (min_y..max_y).map(move |y| snake::Point::new(x, y)))
+        let all_points: Vec<Point> = (0..max_x)
+            .flat_map(|x| (0..max_y).map(move |y| snake::Point::new(x * BODY_SIZE, y * BODY_SIZE)))
             .filter(|point| !occupied_points.contains(point))
             .collect();
         let food_point = all_points
