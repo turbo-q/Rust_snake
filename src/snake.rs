@@ -1,4 +1,4 @@
-use std::{cmp::max, collections::HashMap};
+use std::cmp::max;
 
 use fltk::{prelude::*, *};
 
@@ -11,9 +11,6 @@ pub enum Direction {
     Left,
     Right,
 }
-
-// body大小，小方框
-pub const BODY_SIZE: i32 = 10;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Point {
@@ -89,13 +86,13 @@ impl Snake {
         ];
 
         // 能不能在上边添加
-        if last_point.y() - BODY_SIZE <= 0 {
+        if last_point.y() - consts::BODY_SIZE <= 0 {
             println!("1");
             can_move.retain(|x| x.0 != Direction::Up)
         } else {
             // 可以添加判断添加后是否与现有节点交叉
             let new_x = last_point.x();
-            let new_y = last_point.y() - BODY_SIZE;
+            let new_y = last_point.y() - consts::BODY_SIZE;
             let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
             if is_mix {
                 println!("1=");
@@ -106,13 +103,13 @@ impl Snake {
             }
         }
         // 能不能在下边添加
-        if last_point.y() + 2 * BODY_SIZE >= self.window.h() {
+        if last_point.y() + 2 * consts::BODY_SIZE >= self.window.h() {
             println!("2");
             can_move.retain(|x| x.0 != Direction::Down)
         } else {
             // 可以添加判断添加后是否与现有节点交叉
             let new_x = last_point.x();
-            let new_y = last_point.y() + BODY_SIZE;
+            let new_y = last_point.y() + consts::BODY_SIZE;
             let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
             if is_mix {
                 println!("2=");
@@ -126,12 +123,12 @@ impl Snake {
             }
         }
         // 能不能在左边添加
-        if last_point.x() - BODY_SIZE <= 0 {
+        if last_point.x() - consts::BODY_SIZE <= 0 {
             println!("3");
             can_move.retain(|x| x.0 != Direction::Left)
         } else {
             // 可以添加判断添加后是否与现有节点交叉
-            let new_x = last_point.x() - BODY_SIZE;
+            let new_x = last_point.x() - consts::BODY_SIZE;
             let new_y = last_point.y();
             let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
             if is_mix {
@@ -146,12 +143,12 @@ impl Snake {
             }
         }
         // 能不能在右边添加
-        if last_point.x() + 2 * BODY_SIZE >= self.window.w() {
+        if last_point.x() + 2 * consts::BODY_SIZE >= self.window.w() {
             println!("4");
             can_move.retain(|x| x.0 != Direction::Right)
         } else {
             // 可以添加判断添加后是否与现有节点交叉
-            let new_x = last_point.x() + BODY_SIZE;
+            let new_x = last_point.x() + consts::BODY_SIZE;
             let new_y = last_point.y();
             let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
             if is_mix {
@@ -197,17 +194,17 @@ impl Snake {
             let mut y = head.y;
             let last_direction = self.direction.clone();
             match self.direction {
-                Direction::Down => y += size * BODY_SIZE,
-                Direction::Up => y -= size * BODY_SIZE,
-                Direction::Right => x += size * BODY_SIZE,
-                Direction::Left => x -= size * BODY_SIZE,
+                Direction::Down => y += size * consts::BODY_SIZE,
+                Direction::Up => y -= size * consts::BODY_SIZE,
+                Direction::Right => x += size * consts::BODY_SIZE,
+                Direction::Left => x -= size * consts::BODY_SIZE,
             }
 
             // 超出边界
-            if x <= 0 || x >= self.window.width() - BODY_SIZE {
+            if x <= 0 || x >= self.window.width() - consts::BODY_SIZE {
                 return Err(String::from("Game over"));
             }
-            if y <= 0 || y >= self.window.height() - BODY_SIZE {
+            if y <= 0 || y >= self.window.height() - consts::BODY_SIZE {
                 return Err(String::from("Game over"));
             }
 
@@ -227,15 +224,15 @@ impl Snake {
     fn is_mix_point(&self, point1: &Point, point2: &Point) -> bool {
         // 间隔小于等于2倍body就是穿过了
         let x_space = max(
-            point1.x() + BODY_SIZE - point2.x(),
-            point2.x() + BODY_SIZE - point1.x(),
+            point1.x() + consts::BODY_SIZE - point2.x(),
+            point2.x() + consts::BODY_SIZE - point1.x(),
         );
         let y_space = max(
-            point1.y() + BODY_SIZE - point2.y(),
-            point2.y() + BODY_SIZE - point1.y(),
+            point1.y() + consts::BODY_SIZE - point2.y(),
+            point2.y() + consts::BODY_SIZE - point1.y(),
         );
         (point1.x() == point2.x() || point1.y() == point2.y()/*在同一条线*/)
-            && (x_space < 2 * BODY_SIZE && y_space < 2 * BODY_SIZE/*有交叉*/)
+            && (x_space < 2 * consts::BODY_SIZE && y_space < 2 * consts::BODY_SIZE/*有交叉*/)
     }
 
     fn is_mix_snake(&self, point_: &Point) -> bool {

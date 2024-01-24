@@ -2,12 +2,10 @@ use std::{cell::RefCell, cmp::max, rc::Rc};
 
 use fltk::{enums::*, prelude::*, window::DoubleWindow, *};
 
-// 移动步伐大小
-const MOVE_STEP: i32 = 1;
-
 use crate::{
-    food::{self, Food},
-    snake::{self, Point, BODY_SIZE},
+    consts,
+    food::Food,
+    snake::{self, Point},
     utils,
 };
 pub struct MyApp {
@@ -25,11 +23,11 @@ impl MyApp {
         // 渲染窗口
         let wind = MyApp::draw_window(x, y, w, h);
 
-        // init snake/根据BODY_SIZE 分为相应的份数
-        let max_x = (w - BODY_SIZE) / BODY_SIZE;
-        let max_y = (h - BODY_SIZE) / BODY_SIZE;
-        let rand_x: i32 = utils::rand_range(0, max_x) * BODY_SIZE;
-        let rand_y = utils::rand_range(0, max_y) * BODY_SIZE;
+        // init snake/根据consts::BODY_SIZE 分为相应的份数
+        let max_x = (w - consts::BODY_SIZE) / consts::BODY_SIZE;
+        let max_y = (h - consts::BODY_SIZE) / consts::BODY_SIZE;
+        let rand_x: i32 = utils::rand_range(0, max_x) * consts::BODY_SIZE;
+        let rand_y = utils::rand_range(0, max_y) * consts::BODY_SIZE;
         let _snake = snake::Snake::new(x, y, rand_x, rand_y, wind.clone()); // 初始化snake
 
         MyApp {
@@ -47,12 +45,12 @@ impl MyApp {
 
         // 间隔小于等于2倍body就是穿过了
         let x_space = max(
-            head.x() + BODY_SIZE - self._food.x(),
-            self._food.x() + BODY_SIZE - head.x(),
+            head.x() + consts::BODY_SIZE - self._food.x(),
+            self._food.x() + consts::BODY_SIZE - head.x(),
         );
         let y_space = max(
-            head.y() + BODY_SIZE - self._food.y(),
-            self._food.y() + BODY_SIZE - head.y(),
+            head.y() + consts::BODY_SIZE - self._food.y(),
+            self._food.y() + consts::BODY_SIZE - head.y(),
         );
         println!(
             "x_space:{},y_space:{},head.x:{},head.y:{},_food.x:{},food.y:{}",
@@ -65,7 +63,7 @@ impl MyApp {
         );
 
         (head.x() == self._food.x() || head.y() == self._food.y()/*在同一条线*/)
-            && (x_space < 2 * BODY_SIZE && y_space < 2 * BODY_SIZE/*有交叉*/)
+            && (x_space < 2 * consts::BODY_SIZE && y_space < 2 * consts::BODY_SIZE/*有交叉*/)
     }
 
     pub fn run(&mut self) {
@@ -75,7 +73,7 @@ impl MyApp {
             app::sleep(0.20 - self._snake.borrow_mut().len() as f64 * 0.02); // sleep 时间决定了speed，长度越长，speed越快
             self._snake
                 .borrow_mut()
-                .move_direction(MOVE_STEP, false /*is_direction*/)
+                .move_direction(consts::MOVE_STEP, false /*is_direction*/)
                 .unwrap();
             self.draw();
 
@@ -102,8 +100,8 @@ impl MyApp {
             // 在 draw 中实现绘制逻辑，此处是根据缓存绘制
             for point in &points {
                 draw::set_draw_color(Color::Red);
-                draw::draw_rectf(point.x(), point.y(), snake::BODY_SIZE, snake::BODY_SIZE);
-                draw::draw_circle_fill(food.x(), food.y(), snake::BODY_SIZE, Color::DarkYellow)
+                draw::draw_rectf(point.x(), point.y(), consts::BODY_SIZE, consts::BODY_SIZE);
+                draw::draw_circle_fill(food.x(), food.y(), consts::BODY_SIZE, Color::DarkYellow)
             }
         });
         self._window.redraw();
@@ -126,12 +124,15 @@ impl MyApp {
     fn init_food(&mut self) {
         let occupied_points = (*self._snake).borrow().get_occupied_points().to_vec();
         // 分成对应的份数
-        let max_x = (self._window.w() - BODY_SIZE) / BODY_SIZE;
-        let max_y = (self._window.h() - BODY_SIZE) / BODY_SIZE;
+        let max_x = (self._window.w() - consts::BODY_SIZE) / consts::BODY_SIZE;
+        let max_y = (self._window.h() - consts::BODY_SIZE) / consts::BODY_SIZE;
 
         // 剩下的坐标点
         let all_points: Vec<Point> = (0..max_x)
-            .flat_map(|x| (0..max_y).map(move |y| snake::Point::new(x * BODY_SIZE, y * BODY_SIZE)))
+            .flat_map(|x| {
+                (0..max_y)
+                    .map(move |y| snake::Point::new(x * consts::BODY_SIZE, y * consts::BODY_SIZE))
+            })
             .filter(|point| !occupied_points.contains(point))
             .collect();
         let food_point = all_points
@@ -158,7 +159,7 @@ impl MyApp {
                     app::awake(); // 唤醒ui线程
                     _snake
                         .borrow_mut()
-                        .move_direction(MOVE_STEP, true /*is_direction*/)
+                        .move_direction(consts::MOVE_STEP, true /*is_direction*/)
                         .unwrap();
                     app::wait();
                     true
