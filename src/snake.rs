@@ -1,10 +1,10 @@
-use std::cmp::max;
+use std::{cmp::max, collections::HashMap};
 
 use fltk::{prelude::*, *};
 
-use crate::consts;
+use crate::{consts, utils};
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Hash, Eq)]
 pub enum Direction {
     Up,
     Down,
@@ -40,13 +40,7 @@ pub struct Snake {
 }
 
 impl Snake {
-    pub fn new(
-        window_x: i32,
-        window_y: i32,
-        x: i32,
-        y: i32,
-        window: window::DoubleWindow,
-    ) -> Snake {
+    pub fn new(x: i32, y: i32, window: window::DoubleWindow) -> Snake {
         Snake {
             len: 1,
             window: window,
@@ -54,6 +48,23 @@ impl Snake {
             occupied_points: vec![Point { x, y }], // 已经占用的点
             last_tail_point: Point { x: x, y: y },
         }
+    }
+    pub fn clear(&mut self) {
+        self.len = 1;
+        // init snake/根据consts::BODY_SIZE 分为相应的份数
+        let max_x = (self.window.w() - consts::BODY_SIZE) / consts::BODY_SIZE;
+        let max_y = (self.window.h() - consts::BODY_SIZE) / consts::BODY_SIZE;
+        let rand_x: i32 = utils::rand_range(0, max_x) * consts::BODY_SIZE;
+        let rand_y = utils::rand_range(0, max_y) * consts::BODY_SIZE;
+
+        self.occupied_points = vec![Point {
+            x: rand_x,
+            y: rand_y,
+        }];
+        self.last_tail_point = Point {
+            x: rand_x,
+            y: rand_y,
+        };
     }
 
     // 获取当前🐍的长度
@@ -67,8 +78,22 @@ impl Snake {
     }
 
     // 改变移动方向
-    pub fn set_direction(&mut self, direction: Direction) {
-        self.direction = direction
+    pub fn set_direction(&mut self, direction: Direction) -> Result<(), String> {
+        let reverse_direction: HashMap<Direction, Direction> = {
+            let mut m = HashMap::new();
+            m.insert(Direction::Up, Direction::Down);
+            m.insert(Direction::Down, Direction::Up);
+            m.insert(Direction::Left, Direction::Right);
+            m.insert(Direction::Right, Direction::Left);
+            m
+        };
+        // 如果大于两个节点肯定不能向相反方向移动
+        if reverse_direction.get(&self.direction).unwrap().to_owned() == direction && self.len() > 1
+        {
+            return Err(String::from("不能移动相反方向"));
+        }
+        self.direction = direction;
+        Ok(())
     }
 
     // 添加body逻辑
@@ -181,13 +206,13 @@ impl Snake {
         }
         let move_direction = can_move.get(0).unwrap();
 
+        self.len += 1;
         self.occupied_points
             .push(Point::new(move_direction.1, move_direction.2))
     }
 
     // 移动主要就是新增加一个node 当作head，新增加的head指向当前最新的head，删除tail
     pub fn move_direction(&mut self, size: i32, is_direction: bool) -> Result<(), String> {
-        println!("points===={:?}", self.occupied_points);
         let first = self.occupied_points.first();
         if let Some(head) = first {
             let mut x = head.x;

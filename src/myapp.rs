@@ -13,6 +13,8 @@ pub struct MyApp {
     _snake: Rc<RefCell<snake::Snake>>, // 多所有者
     _window: DoubleWindow,
     _food: Food,
+    _is_display: Rc<RefCell<bool>>,
+    _is_watch: bool,
 }
 
 impl MyApp {
@@ -28,13 +30,15 @@ impl MyApp {
         let max_y = (h - consts::BODY_SIZE) / consts::BODY_SIZE;
         let rand_x: i32 = utils::rand_range(0, max_x) * consts::BODY_SIZE;
         let rand_y = utils::rand_range(0, max_y) * consts::BODY_SIZE;
-        let _snake = snake::Snake::new(x, y, rand_x, rand_y, wind.clone()); // 初始化snake
+        let _snake = snake::Snake::new(rand_x, rand_y, wind.clone()); // 初始化snake
 
         MyApp {
             _app: a,
             _snake: Rc::new(RefCell::new(_snake)),
             _window: wind,
             _food: Food::new(0, 0),
+            _is_display: Rc::new(RefCell::new(true)),
+            _is_watch: false,
         }
     }
 
@@ -63,27 +67,67 @@ impl MyApp {
         );
 
         (head.x() == self._food.x() || head.y() == self._food.y()/*在同一条线*/)
-            && (x_space < 2 * consts::BODY_SIZE && y_space < 2 * consts::BODY_SIZE/*有交叉*/)
+            && (x_space <= 2 * consts::BODY_SIZE && y_space <= 2 * consts::BODY_SIZE/*有交叉*/)
     }
 
     pub fn run(&mut self) {
+        if !self._is_watch {
+            self.watch_key(); // 监听key
+            self._is_watch = true;
+        }
         self.init_food(); // 初始化food
-        self.watch_key(); // 监听key
-        loop {
-            app::sleep(0.20 - self._snake.borrow_mut().len() as f64 * 0.02); // sleep 时间决定了speed，长度越长，speed越快
-            self._snake
-                .borrow_mut()
-                .move_direction(consts::MOVE_STEP, false /*is_direction*/)
-                .unwrap();
-            self.draw();
 
-            // 渲染出来发现已经eat_food
-            if self.is_eat_food() {
-                // panic!("eat_food");
-                self._snake.borrow_mut().add_body();
-                self.init_food();
+        loop {
+            if *(*self._is_display).borrow() {
+                if self.is_eat_food() {
+                    // panic!("eat_food");
+                    self._snake.borrow_mut().add_body();
+                    self.init_food();
+                }
+
+                app::sleep(0.20 - self._snake.borrow_mut().len() as f64 * 0.02); // sleep 时间决定了speed，长度越长，speed越快
+                let result = self
+                    ._snake
+                    .borrow_mut()
+                    .move_direction(consts::MOVE_STEP, false /*is_direction*/);
+
+                if let Err(_) = result {
+                    self.game_over();
+                    break;
+                }
+                self.draw();
+            } else {
+                // 交出一点时间片。不然要卡死
+                app::wait();
             }
         }
+    }
+
+    fn game_over(&mut self) {
+        *self._is_display.borrow_mut() = false;
+        (*self._snake).borrow_mut().clear(); // 清除数据，重启的话重新开始
+
+        // 绘画结束ui
+        let width = self._window.width();
+        let height = self._window.height();
+        app::awake(); // 唤醒ui线程
+        self._window.draw(move |f| {
+            // 在 draw 中实现绘制逻辑，此处是根据缓存绘制
+            // 绘制背景
+            draw::set_draw_color(Color::Dark3);
+            draw::draw_rectf(0, 0, width, height);
+            // 设置字体和颜色
+            draw::set_font(Font::HelveticaBold, 30);
+            draw::set_draw_color(Color::White);
+            // 在屏幕中央绘制 "Game Over" 文字
+            let text = "Game Over";
+            let (text_width, text_height) = draw::measure(text, true);
+            let x = (width - text_width) / 2;
+            let y = (height + text_height) / 2;
+            draw::draw_text(text, x, y);
+        });
+        self._window.redraw();
+        app::wait();
     }
 
     // 绘画统一在这里处理
@@ -143,17 +187,38 @@ impl MyApp {
 
     fn watch_key(&mut self) {
         let _snake = Rc::clone(&self._snake);
+        let _display = Rc::clone(&self._is_display);
         let _food = self._food.clone();
-        self._window.handle(move |_, ev| {
+
+        self._window.handle(move |w, ev| {
             match ev {
                 Event::KeyDown => {
                     let key = app::event_key();
                     match key {
-                        Key::Up => _snake.borrow_mut().set_direction(snake::Direction::Up),
-                        Key::Down => _snake.borrow_mut().set_direction(snake::Direction::Down),
-                        Key::Left => _snake.borrow_mut().set_direction(snake::Direction::Left),
-                        Key::Right => _snake.borrow_mut().set_direction(snake::Direction::Right),
-                        _ => (),
+                        Key::Up => _snake
+                            .borrow_mut()
+                            .set_direction(snake::Direction::Up)
+                            .unwrap(),
+                        Key::Down => _snake
+                            .borrow_mut()
+                            .set_direction(snake::Direction::Down)
+                            .unwrap(),
+                        Key::Left => _snake
+                            .borrow_mut()
+                            .set_direction(snake::Direction::Left)
+                            .unwrap(),
+                        Key::Right => _snake
+                            .borrow_mut()
+                            .set_direction(snake::Direction::Right)
+                            .unwrap(),
+                        other_key => {
+                            // pause
+                            if other_key.bits() == 0x20 {
+                                let mut is_display = _display.borrow_mut();
+                                *is_display = !*is_display;
+                                return true;
+                            }
+                        }
                     }
                     // 移动完马上渲染一次
                     app::awake(); // 唤醒ui线程
@@ -166,11 +231,8 @@ impl MyApp {
                 }
                 _ => false, // 返回 false 表示未处理其他事件
             }
-        })
-    }
+        });
 
-    // 主线程run，不需要？会主动调用？
-    // pub fn run(&self) {
-    // self.app.run().unwrap()
-    // }
+        // self._window.set_callback(Box::new(x));
+    }
 }
