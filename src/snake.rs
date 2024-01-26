@@ -12,7 +12,7 @@ pub enum Direction {
     Right,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 pub struct Point {
     x: i32, // x方向位置
     y: i32, // y方向位置

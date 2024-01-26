@@ -1,4 +1,4 @@
-use std::{cell::RefCell, cmp::max, rc::Rc};
+use std::{cell::RefCell, cmp::max, collections::HashSet, rc::Rc};
 
 use fltk::{enums::*, prelude::*, window::DoubleWindow, *};
 
@@ -53,14 +53,8 @@ impl MyApp {
 
         loop {
             if *(*self._is_display).borrow() {
-                // if self.is_eat_food() {
-                //     // panic!("eat_food");
-                //     self._snake.borrow_mut().add_body();
-                //     self.init_food();
-                // }
-
                 // 其他地方的game_over
-                if *(*self._is_game_over).borrow() {
+                if *(*self._is_game_over).borrow() || self.is_eat_own() {
                     self.game_over();
                     break;
                 }
@@ -79,6 +73,7 @@ impl MyApp {
                     break;
                 }
 
+                // 吃到食物，add_body,init_food
                 if self.is_eat_food() {
                     // panic!("eat_food");
                     self._snake.borrow_mut().add_body();
@@ -91,6 +86,15 @@ impl MyApp {
                 app::wait();
             }
         }
+    }
+
+    // 🐍身体是否有交叉，判定是否吃到自己
+    fn is_eat_own(&self) -> bool {
+        let len_ = (*self._snake).borrow().get_occupied_points().len();
+        let mut points = (*self._snake).borrow().get_occupied_points().to_vec();
+        let set: HashSet<_> = points.drain(..).collect();
+        let set_points: Vec<_> = set.into_iter().collect();
+        set_points.len() != len_
     }
 
     // 根据头节点判断是否吃到食物
@@ -162,9 +166,13 @@ impl MyApp {
         app::awake(); // 唤醒ui线程
         self._window.draw(move |f| {
             // 在 draw 中实现绘制逻辑，此处是根据缓存绘制
-            for point in &points {
+            for (idx, point) in points.iter().enumerate() {
                 draw::draw_circle_fill(food.x(), food.y(), consts::BODY_SIZE, Color::DarkYellow);
-                draw::set_draw_color(Color::Red);
+                if idx == 0 {
+                    draw::set_draw_color(Color::Red);
+                } else {
+                    draw::set_draw_color(Color::Yellow);
+                }
                 draw::draw_rectf(point.x(), point.y(), consts::BODY_SIZE, consts::BODY_SIZE);
             }
         });
