@@ -15,6 +15,7 @@ pub struct MyApp {
     _food: Food,
     _is_display: Rc<RefCell<bool>>,
     _is_watch: bool,
+    _is_game_over: Rc<RefCell<bool>>,
 }
 
 impl MyApp {
@@ -39,6 +40,7 @@ impl MyApp {
             _food: Food::new(0, 0),
             _is_display: Rc::new(RefCell::new(true)),
             _is_watch: false,
+            _is_game_over: Rc::new(RefCell::new(false)),
         }
     }
 
@@ -56,6 +58,12 @@ impl MyApp {
                 //     self._snake.borrow_mut().add_body();
                 //     self.init_food();
                 // }
+
+                // 其他地方的game_over
+                if *(*self._is_game_over).borrow() {
+                    self.game_over();
+                    break;
+                }
 
                 let min_duration: f64 = 0.01;
                 let duration =
@@ -116,6 +124,7 @@ impl MyApp {
 
     fn game_over(&mut self) {
         *self._is_display.borrow_mut() = false;
+        *self._is_game_over.borrow_mut() = false;
         (*self._snake).borrow_mut().clear(); // 清除数据，重启的话重新开始
 
         // 绘画结束ui
@@ -199,6 +208,7 @@ impl MyApp {
     fn watch_key(&mut self) {
         let _snake = Rc::clone(&self._snake);
         let _display = Rc::clone(&self._is_display);
+        let _game_over = Rc::clone(&self._is_game_over);
         let _food = self._food.clone();
 
         self._window.handle(move |w, ev| {
@@ -206,23 +216,12 @@ impl MyApp {
                 Event::KeyDown => {
                     let key = app::event_key();
                     let mut is_change = true;
-                    match key {
-                        Key::Up => _snake
-                            .borrow_mut()
-                            .set_direction(snake::Direction::Up)
-                            .unwrap(),
-                        Key::Down => _snake
-                            .borrow_mut()
-                            .set_direction(snake::Direction::Down)
-                            .unwrap(),
-                        Key::Left => _snake
-                            .borrow_mut()
-                            .set_direction(snake::Direction::Left)
-                            .unwrap(),
-                        Key::Right => _snake
-                            .borrow_mut()
-                            .set_direction(snake::Direction::Right)
-                            .unwrap(),
+
+                    let result = match key {
+                        Key::Up => _snake.borrow_mut().set_direction(snake::Direction::Up),
+                        Key::Down => _snake.borrow_mut().set_direction(snake::Direction::Down),
+                        Key::Left => _snake.borrow_mut().set_direction(snake::Direction::Left),
+                        Key::Right => _snake.borrow_mut().set_direction(snake::Direction::Right),
                         other_key => {
                             // pause
                             is_change = false;
@@ -231,7 +230,14 @@ impl MyApp {
                                 *is_display = !*is_display;
                                 return true;
                             }
+                            Ok(())
                         }
+                    };
+
+                    // 移动方向game_over
+                    if let Err(_) = result {
+                        *((*_game_over).borrow_mut()) = true;
+                        return false;
                     }
 
                     if is_change {

@@ -85,12 +85,12 @@ impl Snake {
             rand_y,
             self.window.h() - rand_y,
         );
-        let min = utils::min(vec![left, right, up, down].iter()).to_owned();
-        self.direction = match min {
-            _ if min == left => Direction::Left,
-            _ if min == right => Direction::Right,
-            _ if min == up => Direction::Up,
-            _ if min == down => Direction::Down,
+        let max_ = max(max(left, right), max(up, down));
+        self.direction = match max_ {
+            _ if max_ == left => Direction::Left,
+            _ if max_ == right => Direction::Right,
+            _ if max_ == up => Direction::Up,
+            _ if max_ == down => Direction::Down,
             _ => Direction::Right,
         };
     }
