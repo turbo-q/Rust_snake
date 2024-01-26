@@ -51,13 +51,16 @@ impl MyApp {
 
         loop {
             if *(*self._is_display).borrow() {
-                if self.is_eat_food() {
-                    // panic!("eat_food");
-                    self._snake.borrow_mut().add_body();
-                    self.init_food();
-                }
+                // if self.is_eat_food() {
+                //     // panic!("eat_food");
+                //     self._snake.borrow_mut().add_body();
+                //     self.init_food();
+                // }
 
-                app::sleep(0.20 - self._snake.borrow_mut().len() as f64 * 0.02); // sleep 时间决定了speed，长度越长，speed越快
+                let min_duration: f64 = 0.01;
+                let duration =
+                    min_duration.max(0.40 - self._snake.borrow_mut().len() as f64 * 0.01); // sleep 时间决定了speed，长度越长，speed越快
+                app::sleep(duration);
                 let result = self
                     ._snake
                     .borrow_mut()
@@ -67,6 +70,13 @@ impl MyApp {
                     self.game_over();
                     break;
                 }
+
+                if self.is_eat_food() {
+                    // panic!("eat_food");
+                    self._snake.borrow_mut().add_body();
+                    self.init_food();
+                }
+
                 self.draw();
             } else {
                 // 交出一点时间片。不然要卡死
@@ -78,6 +88,7 @@ impl MyApp {
     // 根据头节点判断是否吃到食物
     fn is_eat_food(&self) -> bool {
         let _snake = (*self._snake).borrow();
+
         let head = _snake.get_occupied_points().first().unwrap();
 
         // 间隔小于等于2倍body就是穿过了
@@ -100,7 +111,7 @@ impl MyApp {
         );
 
         (head.x() == self._food.x() || head.y() == self._food.y()/*在同一条线*/)
-            && (x_space <= 2 * consts::BODY_SIZE && y_space <= 2 * consts::BODY_SIZE/*有交叉*/)
+            && (x_space < 2 * consts::BODY_SIZE && y_space < 2 * consts::BODY_SIZE/*有交叉*/)
     }
 
     fn game_over(&mut self) {
@@ -143,9 +154,9 @@ impl MyApp {
         self._window.draw(move |f| {
             // 在 draw 中实现绘制逻辑，此处是根据缓存绘制
             for point in &points {
+                draw::draw_circle_fill(food.x(), food.y(), consts::BODY_SIZE, Color::DarkYellow);
                 draw::set_draw_color(Color::Red);
                 draw::draw_rectf(point.x(), point.y(), consts::BODY_SIZE, consts::BODY_SIZE);
-                draw::draw_circle_fill(food.x(), food.y(), consts::BODY_SIZE, Color::DarkYellow)
             }
         });
         self._window.redraw();
@@ -194,6 +205,7 @@ impl MyApp {
             match ev {
                 Event::KeyDown => {
                     let key = app::event_key();
+                    let mut is_change = true;
                     match key {
                         Key::Up => _snake
                             .borrow_mut()
@@ -213,6 +225,7 @@ impl MyApp {
                             .unwrap(),
                         other_key => {
                             // pause
+                            is_change = false;
                             if other_key.bits() == 0x20 {
                                 let mut is_display = _display.borrow_mut();
                                 *is_display = !*is_display;
@@ -220,13 +233,16 @@ impl MyApp {
                             }
                         }
                     }
-                    // 移动完马上渲染一次
-                    app::awake(); // 唤醒ui线程
-                    _snake
-                        .borrow_mut()
-                        .move_direction(consts::MOVE_STEP, true /*is_direction*/)
-                        .unwrap();
-                    app::wait();
+
+                    if is_change {
+                        // 移动完马上渲染一次，主要渲染方向的改变
+                        // 移动优先
+                        _snake
+                            .borrow_mut()
+                            .move_direction(consts::MOVE_STEP, true /*is_direction*/)
+                            .unwrap();
+                    }
+
                     true
                 }
                 _ => false, // 返回 false 表示未处理其他事件

@@ -37,18 +37,19 @@ pub struct Snake {
     window: window::DoubleWindow,
     occupied_points: Vec<Point>, // 已经占用的点
     last_tail_point: Point,      // 上一次尾节点，可以用来新增节点
+    is_change: bool,
 }
 
 impl Snake {
     pub fn new(x: i32, y: i32, window: window::DoubleWindow) -> Snake {
         // 初始direction设置，哪边距离长就哪边
         let (left, right, up, down) = (x, window.w() - x, y, window.h() - y);
-        let min = utils::min(vec![left, right, up, down].iter()).to_owned();
-        let default_direction = match min {
-            _ if min == left => Direction::Left,
-            _ if min == right => Direction::Right,
-            _ if min == up => Direction::Up,
-            I if min == down => Direction::Down,
+        let max_ = max(max(left, right), max(up, down));
+        let default_direction = match max_ {
+            _ if max_ == left => Direction::Left,
+            _ if max_ == right => Direction::Right,
+            _ if max_ == up => Direction::Up,
+            _ if max_ == down => Direction::Down,
             _ => Direction::Right,
         };
 
@@ -58,6 +59,7 @@ impl Snake {
             direction: default_direction,
             occupied_points: vec![Point { x, y }], // 已经占用的点
             last_tail_point: Point { x: x, y: y },
+            is_change: false,
         }
     }
     pub fn clear(&mut self) {
@@ -88,7 +90,7 @@ impl Snake {
             _ if min == left => Direction::Left,
             _ if min == right => Direction::Right,
             _ if min == up => Direction::Up,
-            I if min == down => Direction::Down,
+            _ if min == down => Direction::Down,
             _ => Direction::Right,
         };
     }
@@ -117,6 +119,9 @@ impl Snake {
         if reverse_direction.get(&self.direction).unwrap().to_owned() == direction && self.len() > 1
         {
             return Err(String::from("不能移动相反方向"));
+        }
+        if direction != self.direction {
+            self.is_change = true;
         }
         self.direction = direction;
         Ok(())
@@ -239,6 +244,11 @@ impl Snake {
 
     // 移动主要就是新增加一个node 当作head，新增加的head指向当前最新的head，删除tail
     pub fn move_direction(&mut self, size: i32, is_direction: bool) -> Result<(), String> {
+        // 方向改变放弃这次渲染，渲染方向的改变（方向的改变已经调用过一次move_direction了）
+        if self.is_change && !is_direction {
+            self.is_change = false;
+            return Ok(());
+        }
         let first = self.occupied_points.first();
         if let Some(head) = first {
             let mut x = head.x;
@@ -252,10 +262,10 @@ impl Snake {
             }
 
             // 超出边界
-            if x <= 0 || x >= self.window.width() - consts::BODY_SIZE {
+            if x < 0 || x > self.window.width() - consts::BODY_SIZE {
                 return Err(String::from("Game over"));
             }
-            if y <= 0 || y >= self.window.height() - consts::BODY_SIZE {
+            if y < 0 || y > self.window.height() - consts::BODY_SIZE {
                 return Err(String::from("Game over"));
             }
 
