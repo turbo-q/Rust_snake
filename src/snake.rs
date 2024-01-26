@@ -41,10 +41,21 @@ pub struct Snake {
 
 impl Snake {
     pub fn new(x: i32, y: i32, window: window::DoubleWindow) -> Snake {
+        // 初始direction设置，哪边距离长就哪边
+        let (left, right, up, down) = (x, window.w() - x, y, window.h() - y);
+        let min = utils::min(vec![left, right, up, down].iter()).to_owned();
+        let default_direction = match min {
+            _ if min == left => Direction::Left,
+            _ if min == right => Direction::Right,
+            _ if min == up => Direction::Up,
+            I if min == down => Direction::Down,
+            _ => Direction::Right,
+        };
+
         Snake {
             len: 1,
             window: window,
-            direction: Direction::Right,
+            direction: default_direction,
             occupied_points: vec![Point { x, y }], // 已经占用的点
             last_tail_point: Point { x: x, y: y },
         }
@@ -64,6 +75,21 @@ impl Snake {
         self.last_tail_point = Point {
             x: rand_x,
             y: rand_y,
+        };
+
+        let (left, right, up, down) = (
+            rand_x,
+            self.window.w() - rand_x,
+            rand_y,
+            self.window.h() - rand_y,
+        );
+        let min = utils::min(vec![left, right, up, down].iter()).to_owned();
+        self.direction = match min {
+            _ if min == left => Direction::Left,
+            _ if min == right => Direction::Right,
+            _ if min == up => Direction::Up,
+            I if min == down => Direction::Down,
+            _ => Direction::Right,
         };
     }
 

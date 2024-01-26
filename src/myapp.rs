@@ -42,34 +42,6 @@ impl MyApp {
         }
     }
 
-    // 根据头节点判断是否吃到食物
-    fn is_eat_food(&self) -> bool {
-        let _snake = (*self._snake).borrow();
-        let head = _snake.get_occupied_points().first().unwrap();
-
-        // 间隔小于等于2倍body就是穿过了
-        let x_space = max(
-            head.x() + consts::BODY_SIZE - self._food.x(),
-            self._food.x() + consts::BODY_SIZE - head.x(),
-        );
-        let y_space = max(
-            head.y() + consts::BODY_SIZE - self._food.y(),
-            self._food.y() + consts::BODY_SIZE - head.y(),
-        );
-        println!(
-            "x_space:{},y_space:{},head.x:{},head.y:{},_food.x:{},food.y:{}",
-            x_space,
-            y_space,
-            head.x(),
-            head.y(),
-            self._food.x(),
-            self._food.y()
-        );
-
-        (head.x() == self._food.x() || head.y() == self._food.y()/*在同一条线*/)
-            && (x_space <= 2 * consts::BODY_SIZE && y_space <= 2 * consts::BODY_SIZE/*有交叉*/)
-    }
-
     pub fn run(&mut self) {
         if !self._is_watch {
             self.watch_key(); // 监听key
@@ -101,6 +73,34 @@ impl MyApp {
                 app::wait();
             }
         }
+    }
+
+    // 根据头节点判断是否吃到食物
+    fn is_eat_food(&self) -> bool {
+        let _snake = (*self._snake).borrow();
+        let head = _snake.get_occupied_points().first().unwrap();
+
+        // 间隔小于等于2倍body就是穿过了
+        let x_space = max(
+            head.x() + consts::BODY_SIZE - self._food.x(),
+            self._food.x() + consts::BODY_SIZE - head.x(),
+        );
+        let y_space = max(
+            head.y() + consts::BODY_SIZE - self._food.y(),
+            self._food.y() + consts::BODY_SIZE - head.y(),
+        );
+        println!(
+            "x_space:{},y_space:{},head.x:{},head.y:{},_food.x:{},food.y:{}",
+            x_space,
+            y_space,
+            head.x(),
+            head.y(),
+            self._food.x(),
+            self._food.y()
+        );
+
+        (head.x() == self._food.x() || head.y() == self._food.y()/*在同一条线*/)
+            && (x_space <= 2 * consts::BODY_SIZE && y_space <= 2 * consts::BODY_SIZE/*有交叉*/)
     }
 
     fn game_over(&mut self) {
