@@ -2,7 +2,10 @@ use std::{cmp::max, collections::HashMap};
 
 use fltk::{prelude::*, *};
 
-use crate::{consts, utils};
+use crate::{
+    consts::{self, BODY_SIZE},
+    utils,
+};
 
 #[derive(PartialEq, Debug, Clone, Hash, Eq)]
 pub enum Direction {
@@ -43,7 +46,8 @@ pub struct Snake {
 impl Snake {
     pub fn new(x: i32, y: i32, window: window::DoubleWindow) -> Snake {
         // 初始direction设置，哪边距离长就哪边
-        let (left, right, up, down) = (x, window.w() - x, y, window.h() - y);
+        let (left, right, up, down) =
+            (x, window.w() - x - BODY_SIZE, y, window.h() - y - BODY_SIZE);
         let max_ = max(max(left, right), max(up, down));
         let default_direction = match max_ {
             _ if max_ == left => Direction::Left,
@@ -220,6 +224,7 @@ impl Snake {
         }
         // 没有可以移动
         if can_move.len() == 0 {
+            println!("{:?}", self.occupied_points);
             panic!("Game over")
         }
 

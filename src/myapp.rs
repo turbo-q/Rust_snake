@@ -13,9 +13,12 @@ pub struct MyApp {
     _snake: Rc<RefCell<snake::Snake>>, // 多所有者
     _window: DoubleWindow,
     _food: Food,
+
+    // state
     _is_display: Rc<RefCell<bool>>,
     _is_watch: bool,
     _is_game_over: Rc<RefCell<bool>>,
+    _is_win: bool,
 }
 
 impl MyApp {
@@ -41,6 +44,7 @@ impl MyApp {
             _is_display: Rc::new(RefCell::new(true)),
             _is_watch: false,
             _is_game_over: Rc::new(RefCell::new(false)),
+            _is_win: false,
         }
     }
 
@@ -53,6 +57,12 @@ impl MyApp {
 
         loop {
             if *(*self._is_display).borrow() {
+                // win
+                if self._is_win {
+                    self.game_win();
+                    break;
+                }
+
                 // 其他地方的game_over
                 if *(*self._is_game_over).borrow() || self.is_eat_own() {
                     self.game_over();
@@ -124,6 +134,34 @@ impl MyApp {
 
         (head.x() == self._food.x() || head.y() == self._food.y()/*在同一条线*/)
             && (x_space < 2 * consts::BODY_SIZE && y_space < 2 * consts::BODY_SIZE/*有交叉*/)
+    }
+
+    fn game_win(&mut self) {
+        *self._is_display.borrow_mut() = false;
+        *self._is_game_over.borrow_mut() = false;
+        (*self._snake).borrow_mut().clear(); // 清除数据，重启的话重新开始
+        self._is_win = false;
+
+        // 绘画结束ui
+        let width = self._window.width();
+        let height = self._window.height();
+        app::awake(); // 唤醒ui线程
+        self._window.draw(move |f| {
+            // 在 draw 中实现绘制逻辑，此处是根据缓存绘制
+            // 绘制背景
+            draw::set_draw_color(Color::Dark3);
+            draw::draw_rectf(0, 0, width, height);
+            // 设置字体和颜色
+            draw::set_font(Font::HelveticaBold, 30);
+            draw::set_draw_color(Color::White);
+            let text = "Victory";
+            let (text_width, text_height) = draw::measure(text, true);
+            let x = (width - text_width) / 2;
+            let y = (height + text_height) / 2;
+            draw::draw_text(text, x, y);
+        });
+        self._window.redraw();
+        app::wait();
     }
 
     fn game_over(&mut self) {
@@ -207,6 +245,10 @@ impl MyApp {
             })
             .filter(|point| !occupied_points.contains(point))
             .collect();
+        if all_points.len() == 0 {
+            self._is_win = true;
+            return;
+        }
         let food_point = all_points
             .get(utils::rand_range(0, all_points.len()))
             .unwrap();
