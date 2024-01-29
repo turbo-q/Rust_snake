@@ -16,7 +16,7 @@ pub struct MyApp {
 
     // state
     _is_display: Rc<RefCell<bool>>,
-    _is_watch: bool,
+    _is_init: bool,
     _is_game_over: Rc<RefCell<bool>>,
     _is_win: bool,
 }
@@ -24,10 +24,10 @@ pub struct MyApp {
 impl MyApp {
     pub fn new(x: i32, y: i32, w: i32, h: i32) -> MyApp {
         // init app style
-        let a = app::App::default().with_scheme(app::Scheme::Plastic);
+        let a = app::App::default().with_scheme(app::Scheme::Gleam);
 
         // 渲染窗口
-        let wind = MyApp::draw_window(x, y, w, h);
+        let wind = MyApp::new_window(x, y, w, h);
 
         // init snake/根据consts::BODY_SIZE 分为相应的份数
         let max_x = (w - consts::BODY_SIZE) / consts::BODY_SIZE;
@@ -41,21 +41,26 @@ impl MyApp {
             _snake: Rc::new(RefCell::new(_snake)),
             _window: wind,
             _food: Food::new(0, 0),
-            _is_display: Rc::new(RefCell::new(true)),
-            _is_watch: false,
+            _is_display: Rc::new(RefCell::new(false)),
+            _is_init: false,
             _is_game_over: Rc::new(RefCell::new(false)),
             _is_win: false,
         }
     }
 
     pub fn run(&mut self) {
-        if !self._is_watch {
+        if !self._is_init {
+            self.draw_window(); // 开机动画
             self.watch_key(); // 监听key
-            self._is_watch = true;
+            self._is_init = true;
         }
-        self.init_food(); // 初始化food
 
+        // 初始化food
+        self.init_food();
+
+        // 主循环
         loop {
+            // println!("join========{}", *(*self._is_display).borrow());
             if *(*self._is_display).borrow() {
                 // win
                 if self._is_win {
@@ -218,15 +223,65 @@ impl MyApp {
         app::wait();
     }
 
-    fn draw_window(x: i32, y: i32, w: i32, h: i32) -> window::DoubleWindow {
+    // 绘制开机动画
+    fn draw_window(&mut self) {
+        let mut group = group::Group::new(0, 0, self._window.w(), self._window.h(), "");
+        group.set_frame(FrameType::FlatBox);
+        group.set_color(Color::from_u32(0xECECEC));
+
+        let mut title = button::Button::new(
+            0,
+            self._window.h() / 6,
+            self._window.w(),
+            self._window.h() / 3,
+            "贪吃蛇游戏",
+        );
+        title.set_frame(FrameType::FlatBox);
+        title.set_color(Color::from_u32(0xECECEC));
+        title.set_label_font(Font::HelveticaBold);
+        title.set_label_size((self._window.h() / 6).min(24));
+        title.set_label_color(Color::from_u32(0x333333));
+        title.set_label_type(fltk::enums::LabelType::Normal);
+
+        let mut start_button = button::Button::new(
+            self._window.w() / 4,
+            2 * self._window.h() / 3,
+            self._window.w() / 2,
+            self._window.h() / 6,
+            "开始游戏",
+        );
+        start_button.set_frame(FrameType::FlatBox);
+        start_button.set_color(Color::from_u32(0x4CAF50));
+        start_button.set_label_font(Font::HelveticaBold);
+        start_button.set_label_size((self._window.h() / 12).min(16));
+        start_button.set_label_color(Color::White);
+        start_button.set_label_type(fltk::enums::LabelType::Normal);
+
+        let _display = Rc::clone(&self._is_display);
+        start_button.handle(move |btn, ev| {
+            match ev {
+                fltk::enums::Event::Released => {
+                    btn.hide();
+                    title.hide();
+                    btn.window().unwrap().set_border(true); // 无边框
+
+                    // 启动游戏
+                    *_display.borrow_mut() = true;
+
+                    true
+                }
+                _ => false,
+            }
+        });
+        self._window.end();
+        self._window.show();
+    }
+
+    fn new_window(x: i32, y: i32, w: i32, h: i32) -> window::DoubleWindow {
         // init
         let mut wind: window::DoubleWindow = window::Window::new(x, y, w, h, "Rust_snake");
-        wind.set_color(Color::Black); // 设置颜色
         wind.set_border(false); // 无边框
-                                // wind.fullscreen(true); // 全屏
 
-        wind.end();
-        wind.show();
         wind
     }
 
