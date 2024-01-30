@@ -60,7 +60,6 @@ impl MyApp {
 
         // 主循环
         loop {
-            // println!("join========{}", *(*self._is_display).borrow());
             if *(*self._is_display).borrow() {
                 // win
                 if self._is_win {
@@ -76,7 +75,7 @@ impl MyApp {
 
                 let min_duration: f64 = 0.01;
                 let duration =
-                    min_duration.max(0.40 - self._snake.borrow_mut().len() as f64 * 0.01); // sleep 时间决定了speed，长度越长，speed越快
+                    min_duration.max(0.21 - self._snake.borrow_mut().len() as f64 * 0.005); // sleep 时间决定了speed，长度越长，speed越快
                 app::sleep(duration);
                 let result = self
                     ._snake
@@ -263,8 +262,9 @@ impl MyApp {
                 fltk::enums::Event::Released => {
                     btn.hide();
                     title.hide();
+                    group.hide();
                     btn.window().unwrap().set_border(true); // 无边框
-
+                    btn.window().unwrap().set_color(Color::Black);
                     // 启动游戏
                     *_display.borrow_mut() = true;
 
@@ -273,6 +273,7 @@ impl MyApp {
                 _ => false,
             }
         });
+        self._window.set_color(Color::Black);
         self._window.end();
         self._window.show();
     }
@@ -359,7 +360,5 @@ impl MyApp {
                 _ => false, // 返回 false 表示未处理其他事件
             }
         });
-
-        // self._window.set_callback(Box::new(x));
     }
 }

@@ -147,7 +147,6 @@ impl Snake {
 
         // 能不能在上边添加
         if last_point.y() - consts::BODY_SIZE <= 0 {
-            println!("1");
             can_move.retain(|x| x.0 != Direction::Up)
         } else {
             // 可以添加判断添加后是否与现有节点交叉
@@ -155,7 +154,6 @@ impl Snake {
             let new_y = last_point.y() - consts::BODY_SIZE;
             let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
             if is_mix {
-                println!("1=");
                 can_move.retain(|x| x.0 != Direction::Up)
             } else {
                 let idx = can_move.iter().position(|x| x.0 == Direction::Up).unwrap();
@@ -164,7 +162,6 @@ impl Snake {
         }
         // 能不能在下边添加
         if last_point.y() + 2 * consts::BODY_SIZE >= self.window.h() {
-            println!("2");
             can_move.retain(|x| x.0 != Direction::Down)
         } else {
             // 可以添加判断添加后是否与现有节点交叉
@@ -172,7 +169,6 @@ impl Snake {
             let new_y = last_point.y() + consts::BODY_SIZE;
             let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
             if is_mix {
-                println!("2=");
                 can_move.retain(|x| x.0 != Direction::Down)
             } else {
                 let idx = can_move
@@ -204,7 +200,6 @@ impl Snake {
         }
         // 能不能在右边添加
         if last_point.x() + 2 * consts::BODY_SIZE >= self.window.w() {
-            println!("4");
             can_move.retain(|x| x.0 != Direction::Right)
         } else {
             // 可以添加判断添加后是否与现有节点交叉
@@ -212,7 +207,6 @@ impl Snake {
             let new_y = last_point.y();
             let is_mix = self.is_mix_snake(&Point { x: new_x, y: new_y });
             if is_mix {
-                println!("4=");
                 can_move.retain(|x| x.0 != Direction::Right)
             } else {
                 let idx = can_move
@@ -224,7 +218,6 @@ impl Snake {
         }
         // 没有可以移动
         if can_move.len() == 0 {
-            println!("{:?}", self.occupied_points);
             panic!("Game over")
         }
 
