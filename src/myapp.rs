@@ -212,7 +212,15 @@ impl MyApp {
         self._window.draw(move |f| {
             // 在 draw 中实现绘制逻辑，此处是根据缓存绘制
             for (idx, point) in points.iter().enumerate() {
-                draw::draw_circle_fill(food.x(), food.y(), consts::BODY_SIZE, Color::DarkYellow);
+                draw::draw_text2(
+                    "💩",
+                    food.x(),
+                    food.y(),
+                    consts::BODY_SIZE,
+                    consts::BODY_SIZE,
+                    Align::all(),
+                );
+                // draw::draw_circle_fill(food.x(), food.y(), consts::BODY_SIZE, Color::DarkYellow);
                 if idx == 0 {
                     // 蛇头。绘制一个半圆，一个方形
                     let (mut x, mut y, mut w, mut h) =
@@ -350,6 +358,18 @@ impl MyApp {
         title.set_label_size((self._window.h() / 6).min(24));
         title.set_label_color(Color::from_u32(0x333333));
         title.set_label_type(fltk::enums::LabelType::Normal);
+
+        // let mut w = self._window.clone();
+        self._window.draw(|w| {
+            draw::draw_text2(
+                "↑ ↓ ← → 控制移动方向\n空格键暂停/重启",
+                0,
+                w.h() / 2,
+                w.w(),
+                w.h() / 6,
+                Align::Center,
+            );
+        });
 
         let mut start_button = button::Button::new(
             self._window.w() / 4,
