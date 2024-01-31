@@ -109,6 +109,11 @@ impl Snake {
         &self.occupied_points
     }
 
+    // 获取当前移动方向
+    pub fn get_direction(&self) -> &Direction {
+        &self.direction
+    }
+
     // 改变移动方向
     pub fn set_direction(&mut self, direction: Direction) -> Result<(), String> {
         let reverse_direction: HashMap<Direction, Direction> = {

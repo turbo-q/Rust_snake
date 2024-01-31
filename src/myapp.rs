@@ -5,7 +5,7 @@ use fltk::{enums::*, prelude::*, window::DoubleWindow, *};
 use crate::{
     consts,
     food::Food,
-    snake::{self, Point},
+    snake::{self, Direction, Point},
     utils,
 };
 pub struct MyApp {
@@ -204,6 +204,9 @@ impl MyApp {
         // 获取food点位
         let food = self._food.clone();
 
+        // 获取snake 方向
+        let direction = (*self._snake).borrow().get_direction().clone();
+
         // draw
         app::awake(); // 唤醒ui线程
         self._window.draw(move |f| {
@@ -211,11 +214,117 @@ impl MyApp {
             for (idx, point) in points.iter().enumerate() {
                 draw::draw_circle_fill(food.x(), food.y(), consts::BODY_SIZE, Color::DarkYellow);
                 if idx == 0 {
-                    draw::set_draw_color(Color::Red);
+                    // 蛇头。绘制一个半圆，一个方形
+                    let (mut x, mut y, mut w, mut h) =
+                        (point.x(), point.y(), consts::BODY_SIZE, consts::BODY_SIZE);
+                    let eye1: Point;
+                    let eye2: Point;
+
+                    match direction {
+                        Direction::Left => {
+                            x += consts::BODY_SIZE / 2;
+                            w = consts::BODY_SIZE / 2;
+
+                            eye1 = Point::new(
+                                point.x() + consts::BODY_SIZE / 4 - consts::EYE_SIZE / 2,
+                                point.y() + consts::BODY_SIZE / 4 - consts::EYE_SIZE / 2,
+                            );
+                            eye2 = Point::new(
+                                point.x() + consts::BODY_SIZE / 4 - consts::EYE_SIZE / 2,
+                                point.y() + 3 * consts::BODY_SIZE / 4 - consts::EYE_SIZE / 2,
+                            )
+                        }
+                        Direction::Up => {
+                            y += consts::BODY_SIZE / 2;
+                            h = consts::BODY_SIZE / 2;
+
+                            eye1 = Point::new(
+                                point.x() + consts::BODY_SIZE / 4 - consts::EYE_SIZE / 2,
+                                point.y() + consts::BODY_SIZE / 4 - consts::EYE_SIZE / 2,
+                            );
+                            eye2 = Point::new(
+                                point.x() + 3 * consts::BODY_SIZE / 4 - consts::EYE_SIZE / 2,
+                                point.y() + consts::BODY_SIZE / 4 - consts::EYE_SIZE / 2,
+                            )
+                        }
+                        Direction::Right => {
+                            w = consts::BODY_SIZE / 2;
+
+                            eye1 = Point::new(
+                                point.x() + consts::BODY_SIZE * 3 / 4 - consts::EYE_SIZE / 2,
+                                point.y() + consts::BODY_SIZE / 4 - consts::EYE_SIZE / 2,
+                            );
+                            eye2 = Point::new(
+                                point.x() + consts::BODY_SIZE * 3 / 4 - consts::EYE_SIZE / 2,
+                                point.y() + consts::BODY_SIZE * 3 / 4 - consts::EYE_SIZE / 2,
+                            );
+                        }
+                        Direction::Down => {
+                            h = consts::BODY_SIZE / 2;
+
+                            eye1 = Point::new(
+                                point.x() + consts::BODY_SIZE / 4 - consts::EYE_SIZE / 2,
+                                point.y() + consts::BODY_SIZE * 3 / 4 - consts::EYE_SIZE / 2,
+                            );
+                            eye2 = Point::new(
+                                point.x() + consts::BODY_SIZE * 3 / 4 - consts::EYE_SIZE / 2,
+                                point.y() + consts::BODY_SIZE * 3 / 4 - consts::EYE_SIZE / 2,
+                            );
+                        }
+                    }
+
+                    // 眼白信息
+                    let (eye1_centerx, eye1_centery) = (
+                        eye1.x() + consts::EYE_SIZE / 2,
+                        eye1.y() + consts::EYE_SIZE / 2,
+                    );
+                    let (eye2_centerx, eye2_centery) = (
+                        eye2.x() + consts::EYE_SIZE / 2,
+                        eye2.y() + consts::EYE_SIZE / 2,
+                    );
+
+                    // 绘制头半圆
+                    draw::draw_circle_fill(
+                        point.x(),
+                        point.y(),
+                        consts::BODY_SIZE,
+                        Color::from_hex_str("#00A4E9").unwrap(),
+                    );
+                    // 绘制眼睛
+                    draw::draw_circle_fill(eye1.x(), eye1.y(), consts::EYE_SIZE, Color::Black);
+                    draw::draw_circle_fill(eye2.x(), eye2.y(), consts::EYE_SIZE, Color::Black);
+                    // 绘制眼白
+                    draw::draw_circle_fill(
+                        eye1_centerx,
+                        eye1_centery,
+                        consts::EYE_WHITE_SIZE,
+                        Color::White,
+                    );
+                    draw::draw_circle_fill(
+                        eye2_centerx,
+                        eye2_centery,
+                        consts::EYE_WHITE_SIZE,
+                        Color::White,
+                    );
+                    // 绘制头的方形部分
+                    draw::draw_rect_fill(x, y, w, h, Color::from_hex_str("#00A4E9").unwrap());
+                } else if idx % 2 == 1 {
+                    draw::draw_rect_fill(
+                        point.x(),
+                        point.y(),
+                        consts::BODY_SIZE,
+                        consts::BODY_SIZE,
+                        Color::Red,
+                    );
                 } else {
-                    draw::set_draw_color(Color::Yellow);
+                    draw::draw_rect_fill(
+                        point.x(),
+                        point.y(),
+                        consts::BODY_SIZE,
+                        consts::BODY_SIZE,
+                        Color::from_hex_str("#00A4E9").unwrap(),
+                    );
                 }
-                draw::draw_rectf(point.x(), point.y(), consts::BODY_SIZE, consts::BODY_SIZE);
             }
         });
         self._window.redraw();
@@ -264,7 +373,7 @@ impl MyApp {
                     title.hide();
                     group.hide();
                     btn.window().unwrap().set_border(true); // 无边框
-                    btn.window().unwrap().set_color(Color::Black);
+                    btn.window().unwrap().set_color(Color::White);
                     // 启动游戏
                     *_display.borrow_mut() = true;
 
@@ -273,7 +382,7 @@ impl MyApp {
                 _ => false,
             }
         });
-        self._window.set_color(Color::Black);
+        self._window.set_color(Color::White);
         self._window.end();
         self._window.show();
     }
