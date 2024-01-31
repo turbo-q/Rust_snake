@@ -210,17 +210,27 @@ impl MyApp {
         // draw
         app::awake(); // 唤醒ui线程
         self._window.draw(move |f| {
-            // 在 draw 中实现绘制逻辑，此处是根据缓存绘制
+            // 绘制食物
+            draw::draw_text2(
+                "💩",
+                food.x(),
+                food.y(),
+                consts::BODY_SIZE,
+                consts::BODY_SIZE,
+                Align::all(),
+            );
+            // 绘制得分
+            draw::set_draw_color(Color::Black);
+            draw::draw_text2(
+                format!("当前得分: {}", points.len()).as_str(),
+                f.w() * 3 / 4,
+                f.h() / 15,
+                f.w() / 6,
+                f.h() / 15,
+                Align::Center,
+            );
+            // 绘制蛇
             for (idx, point) in points.iter().enumerate() {
-                draw::draw_text2(
-                    "💩",
-                    food.x(),
-                    food.y(),
-                    consts::BODY_SIZE,
-                    consts::BODY_SIZE,
-                    Align::all(),
-                );
-                // draw::draw_circle_fill(food.x(), food.y(), consts::BODY_SIZE, Color::DarkYellow);
                 if idx == 0 {
                     // 蛇头。绘制一个半圆，一个方形
                     let (mut x, mut y, mut w, mut h) =
