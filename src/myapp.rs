@@ -210,15 +210,6 @@ impl MyApp {
         // draw
         app::awake(); // 唤醒ui线程
         self._window.draw(move |f| {
-            // 绘制食物
-            draw::draw_text2(
-                "💩",
-                food.x(),
-                food.y(),
-                consts::BODY_SIZE,
-                consts::BODY_SIZE,
-                Align::all(),
-            );
             // 绘制得分
             draw::set_draw_color(Color::Black);
             draw::draw_text2(
@@ -229,6 +220,17 @@ impl MyApp {
                 f.h() / 15,
                 Align::Center,
             );
+
+            // 绘制食物
+            draw::draw_text2(
+                "💩",
+                food.x(),
+                food.y(),
+                consts::BODY_SIZE,
+                consts::BODY_SIZE,
+                Align::all(),
+            );
+
             // 绘制蛇
             for (idx, point) in points.iter().enumerate() {
                 if idx == 0 {
